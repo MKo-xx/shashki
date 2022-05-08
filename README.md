@@ -12,7 +12,7 @@ Each Player can work with each Game.
 ### Games
 
 * ConsoleGame - Simple implementation of game(no fancy optimizations)
-* FastGame - TODO: Optimized version of Game with only 2x64 bit memory usage and fast way to calculate available moves
+* FastGame - Optimized version of Game with only 2x64 bit memory usage and fast way to calculate available moves. About 5 times faster than ConsoleGame
 
 
 ### Players

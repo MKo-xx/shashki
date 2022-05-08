@@ -13,10 +13,10 @@ using namespace shashki;
 int
 main()
 {
-    ConsoleGame game;
-    //FastGame game;
-    HumanPlayer player1(game, Side::White);
-    //RandomPlayer player1(game, Side::White);
+    //ConsoleGame game;
+    FastGame game;
+    //HumanPlayer player1(game, Side::White);
+    RandomPlayer player1(game, Side::White);
     //HumanPlayer player2(game, Side::Black);
     RandomPlayer player2(game, Side::Black);
 

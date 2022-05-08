@@ -33,7 +33,7 @@ HumanPlayer::move()
         }
 
         std::string error;
-        Move move;
+        Move move(0, 0);
         move.setSide(_side);
         if (!strToMove(str, move, error))
         {

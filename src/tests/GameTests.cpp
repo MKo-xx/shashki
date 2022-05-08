@@ -1,3 +1,7 @@
+// Standard
+#include <experimental/random>
+#include <chrono>
+
 // Google
 #include <gtest/gtest.h>
 
@@ -14,32 +18,40 @@ inline
 Move
 M(const std::string& str_)
 {
-    EXPECT_EQ(6, str_.size());
+    // sample SBKa1b2
 
-    EXPECT_TRUE(str_[0] == 'W' or str_[0] == 'B');
-    auto side = (str_[0] == 'W') ? Side::White : Side::Black;
+    EXPECT_EQ(7, str_.size());
 
-    EXPECT_TRUE(str_[1] == 'C' or str_[1] == ' ');
-    auto capture = (str_[1] == 'C');
+    EXPECT_TRUE(str_[0] == 'N' or str_[0] == 'S');
+    auto capture = (str_[0] == 'N') ? Capture::None : Capture::Single;
 
-    EXPECT_TRUE(str_[2] >= 'a' and str_[2] <= 'h');
-    auto sj = str_[2] - 'a';
+    EXPECT_TRUE(str_[1] == 'W' or str_[1] == 'B');
+    auto side = (str_[1] == 'W') ? Side::White : Side::Black;
 
-    EXPECT_TRUE(str_[3] >= '1' and str_[3] <= '8');
-    auto si = 7 - (str_[3] - '1');
+    EXPECT_TRUE(str_[2] == 'M' or str_[2] == 'K');
+    auto type = (str_[2] == 'M') ? Type::Man : Type::King;
 
-    EXPECT_TRUE(str_[4] >= 'a' and str_[4] <= 'h');
-    auto ej = str_[4] - 'a';
+    EXPECT_TRUE(str_[3] >= 'a' and str_[3] <= 'h');
+    auto sj = str_[3] - 'a';
 
-    EXPECT_TRUE(str_[5] >= '1' and str_[5] <= '8');
-    auto ei = 7 - (str_[5] - '1');
+    EXPECT_TRUE(str_[4] >= '1' and str_[4] <= '8');
+    auto si = 7 - (str_[4] - '1');
 
-    return Move(side, capture, si, sj, ei, ej);
+    EXPECT_TRUE(str_[5] >= 'a' and str_[5] <= 'h');
+    auto ej = str_[5] - 'a';
+
+    EXPECT_TRUE(str_[6] >= '1' and str_[6] <= '8');
+    auto ei = 7 - (str_[6] - '1');
+
+    return Move(capture, side, type, si, sj, ei, ej);
 }
 
 
 TEST(GameTests, MoveTests)
 {
+    for (Capture c : std::vector<Capture>{Capture::None, Capture::Single})
+    for (Side s : std::vector<Side>{Side::White, Side::Black})
+    for (Type t : std::vector<Type>{Type::Man, Type::King})
     for (uint8_t si = 0; si < 8; ++si)
     for (uint8_t sj = 0; sj < 8; ++sj)
     for (uint8_t ei = 0; ei < 8; ++ei)
@@ -49,39 +61,10 @@ TEST(GameTests, MoveTests)
         if (not ((ei % 2 == 0) xor (ej % 2 == 0))) continue;
 
         {
-            Move m(Side::White, false, si, sj, ei, ej);
-            ASSERT_EQ(Side::White, m.side());
-            ASSERT_EQ(false, m.capture());
-            ASSERT_EQ(si, m.si());
-            ASSERT_EQ(sj, m.sj());
-            ASSERT_EQ(ei, m.ei());
-            ASSERT_EQ(ej, m.ej());
-        }
-
-        {
-            Move m(Side::Black, false, si, sj, ei, ej);
-            ASSERT_EQ(Side::Black, m.side());
-            ASSERT_EQ(false, m.capture());
-            ASSERT_EQ(si, m.si());
-            ASSERT_EQ(sj, m.sj());
-            ASSERT_EQ(ei, m.ei());
-            ASSERT_EQ(ej, m.ej());
-        }
-
-        {
-            Move m(Side::White, true, si, sj, ei, ej);
-            ASSERT_EQ(Side::White, m.side());
-            ASSERT_EQ(true, m.capture());
-            ASSERT_EQ(si, m.si());
-            ASSERT_EQ(sj, m.sj());
-            ASSERT_EQ(ei, m.ei());
-            ASSERT_EQ(ej, m.ej());
-        }
-
-        {
-            Move m(Side::Black, true, si, sj, ei, ej);
-            ASSERT_EQ(Side::Black, m.side());
-            ASSERT_EQ(true, m.capture());
+            Move m(c, s, t, si, sj, ei, ej);
+            ASSERT_EQ(c, m.capture());
+            ASSERT_EQ(s, m.side());
+            ASSERT_EQ(t, m.type());
             ASSERT_EQ(si, m.si());
             ASSERT_EQ(sj, m.sj());
             ASSERT_EQ(ei, m.ei());
@@ -109,7 +92,7 @@ void testGame(Game& game)
 1w w w w \n", oss.str());
     oss.str(""); oss.clear();
 
-    game.move(M("W a3b4"));
+    game.move(M("NWMa3b4"));
     game.dumpCompact(oss);
     ASSERT_EQ(
 "\
@@ -125,7 +108,7 @@ void testGame(Game& game)
     oss.str(""); oss.clear();
 
 
-   game.move(M("B b6a5"));
+   game.move(M("NBMb6a5"));
     game.dumpCompact(oss);
     ASSERT_EQ(
 "\
@@ -170,9 +153,135 @@ TEST(GameTests, ConsoleGameTestAvailableMoves)
 }
 
 
-TEST(GameTests, DISABLED_FastGameTestPlay)
+TEST(GameTests, FastGameTestPlay)
 {
     FastGame game;
     testGame(game);
+}
+
+
+TEST(GameTests, FastGameTestAvailableMoves)
+{
+    FastGame game;
+    testAvailableMoves(game);
+}
+
+
+std::vector<std::string>
+str(const std::vector<Move>& v)
+{
+    std::vector<std::string> sv;
+    for (auto& m: v)
+    {
+        sv.push_back(moveToStr(m));
+    }
+
+    std::sort(sv.begin(), sv.end());
+    return sv;
+}
+
+
+Move
+chooseMove(const std::vector<Move>& v)
+{
+    std::vector<Move> cv;
+    for (auto& m : v)
+    {
+        if (Capture::None != m.capture())
+        {
+            cv.push_back(m);
+        }
+    }
+
+    if (!cv.empty())
+    {
+        auto i = std::experimental::randint(0, (int)cv.size() - 1);
+        return cv[i];
+    }
+
+    auto i = std::experimental::randint(0, (int)v.size() - 1);
+    return v[i];
+}
+
+
+TEST(GameTests, CompareGames)
+{
+    for (int i = 0; i < 1000; ++i)
+    {
+
+    ConsoleGame cgame;
+    FastGame fgame;
+    bool is_white_move = true;
+    while(true)
+    {
+        std::ostringstream coss;
+        cgame.dumpCompact(coss);
+
+        std::ostringstream foss;
+        fgame.dumpCompact(foss);
+
+        //cgame.dumpNice(std::cout);
+        //fgame.dumpNice(std::cout);
+        ASSERT_EQ(coss.str(), foss.str());
+
+        const auto cWhiteMoves = cgame.getAllMoves(Side::White);
+        const auto fWhiteMoves = fgame.getAllMoves(Side::White);
+
+        const auto cStrWhiteMoves = str(cWhiteMoves);
+        const auto fStrWhiteMoves = str(fWhiteMoves);
+        ASSERT_EQ(cStrWhiteMoves, fStrWhiteMoves);
+
+        const auto cBlackMoves = cgame.getAllMoves(Side::Black);
+        const auto fBlackMoves = fgame.getAllMoves(Side::Black);
+
+        const auto cStrBlackMoves = str(cBlackMoves);
+        const auto fStrBlackMoves = str(fBlackMoves);
+        ASSERT_EQ(cStrBlackMoves, fStrBlackMoves);
+
+        if (fWhiteMoves.empty() or fBlackMoves.empty())
+        {
+            break;
+        }
+
+        Move m = is_white_move ? chooseMove(fWhiteMoves) : chooseMove(fBlackMoves);
+        //cgame.dumpNice(std::cout);
+        cgame.move(m);
+        fgame.move(m);
+
+        is_white_move = !is_white_move;
+    }
+    }
+}
+
+template <typename TGame>
+void
+checkPerformance()
+{
+    const auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 10 * 1000; ++i)
+    {    
+        TGame game;
+        bool is_white_move = true;
+        while(true)
+        {
+            const auto moves = game.getAllMoves(is_white_move ? Side::White : Side::Black);
+            if (moves.empty())
+            {
+                break;
+            }
+            const auto m = chooseMove(moves);
+            game.move(m);
+        }
+    }
+    const auto end = std::chrono::high_resolution_clock::now();
+    const std::chrono::duration<double> diff = end - start;
+    std::cout << "Measured diff : " << diff.count() << "s\n";
+}
+
+
+TEST(GameTests, MeasurePerformance)
+{
+    checkPerformance<FastGame>();
+    checkPerformance<ConsoleGame>();
 }
 

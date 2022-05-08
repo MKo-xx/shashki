@@ -6,7 +6,7 @@
 #include <vector>
 
 // Shashki
-#include "GameTypes.h"
+#include "Move.h"
 
 
 namespace shashki

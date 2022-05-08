@@ -61,7 +61,7 @@ ConsoleGame::init()
 MoveResult
 ConsoleGame::move(const Move& move_)
 {
-    LOG_DEBUG("XXX: " << move_.side() << " " << moveToStr(move_));
+    LOG_DEBUG("ConsoleGame: Move=" << move_);
 
     MoveResult res;
     res.valid = moveImpl(move_.side(), move_.si(), move_.sj(), move_.ei(), move_.ej(), res.error);
@@ -124,7 +124,7 @@ ConsoleGame::isCaptureAvailable(Side side_) const
     auto moves = getAllMoves(side_);
     for (auto& m : moves)
     {
-        if (m.capture())
+        if (Capture::None != m.capture())
         {
             return true;
         }
@@ -140,7 +140,7 @@ ConsoleGame::moveImpl(Side side_,
                       const int8_t ei, const int8_t ej,
                       std::string& error_)
 {
-    LOG_DEBUG("Trying to move " << side_ << " from " << int(si) << "," << int(sj) << " to " << int(ei) << "," << int(ej));
+    LOG_DEBUG("ConsoleGame: Trying to move " << side_ << " from " << int(si) << "," << int(sj) << " to " << int(ei) << "," << int(ej));
     const Cell my_man  = (side_ == Side::White) ? Cell::WHITE_MAN : Cell::BLACK_MAN;
     const Cell my_king = (side_ == Side::White) ? Cell::WHITE_KING: Cell::BLACK_KING;
     const Cell op_man  = (side_ == Side::White) ? Cell::BLACK_MAN : Cell::WHITE_MAN;
@@ -179,7 +179,7 @@ ConsoleGame::moveImpl(Side side_,
             return false;
         }
 
-        LOG_DEBUG("Moved " << side_ << " from " << int(si) << "," << int(sj) << " to " << int(ei) << "," << int(ej));
+        LOG_DEBUG("ConsoleGame: Moved " << side_ << " from " << int(si) << "," << int(sj) << " to " << int(ei) << "," << int(ej));
         _board[ei][ej] = _board[si][sj];
         _board[si][sj] = Cell::BLACK_EMPTY;
 
@@ -203,7 +203,7 @@ ConsoleGame::moveImpl(Side side_,
             return false;
         }
 
-        LOG_DEBUG("Moved " << side_ << " from " << int(si) << "," << int(sj) << " to " << int(ei) << "," << int(ej));
+        LOG_DEBUG("ConsoleGame: Moved " << side_ << " from " << int(si) << "," << int(sj) << " to " << int(ei) << "," << int(ej));
         _board[ei][ej] = _board[si][sj];
         _board[mi][mj] = Cell::BLACK_EMPTY;
         _board[si][sj] = Cell::BLACK_EMPTY;
@@ -239,7 +239,7 @@ ConsoleGame::moveImpl(Side side_,
         {
             movei(mi);
             movej(mj);
-            LOG_DEBUG("Checking " << LOG_VAR(int(mi)) << LOG_VAR(int(mj)) << LOG_VAR(isJump) << LOG_VAR(isCaptured));
+            LOG_DEBUG("ConsoleGame: Checking " << LOG_VAR(int(mi)) << LOG_VAR(int(mj)) << LOG_VAR(isJump) << LOG_VAR(isCaptured));
             if (isEmpty(_board[mi][mj]))
             {
                 if (isJump and not isCaptured)
@@ -271,7 +271,7 @@ ConsoleGame::moveImpl(Side side_,
         }
 
         // Note: Everything is good, update the board
-        LOG_DEBUG("Moved " << side_ << " from " << int(si) << "," << int(sj) << " to " << int(ei) << "," << int(ej));
+        LOG_DEBUG("ConsoleGame: Moved " << side_ << " from " << int(si) << "," << int(sj) << " to " << int(ei) << "," << int(ej));
         mi = si;
         mj = sj;
         do
@@ -284,7 +284,7 @@ ConsoleGame::moveImpl(Side side_,
         return true;
     }
 
-    LOG_DEBUG("ERROR: unreachable code");
+    LOG_DEBUG("ConsoleGame: ERROR: unreachable code");
     return false;
 }
 
@@ -329,7 +329,7 @@ ConsoleGame::getAllMoves(Side side_) const
                             movej(ej);
                             if (isEmpty(_board[ei][ej]))
                             {
-                                moves.emplace_back(side_, isCapture, si, sj, ei, ej);
+                                moves.emplace_back((isCapture) ? Capture::Single : Capture::None, side_, Type::King, si, sj, ei, ej);
                             }
                             else if (isMyColor(_board[ei][ej]))
                             {
@@ -361,37 +361,37 @@ ConsoleGame::getAllMoves(Side side_) const
                     // Move UP LEFT
                     if (i > 0 and j > 0 and isEmpty(_board[i - 1][j - 1]))
                     {
-                        moves.emplace_back(side_, false, i, j, i - 1, j - 1);
+                        moves.emplace_back(Capture::None, side_, Type::Man, i, j, i - 1, j - 1);
                     }
 
                     // Move UP RIGHT
                     if (i > 0 and j < 7 and isEmpty(_board[i - 1][j + 1]))
                     {
-                        moves.emplace_back(side_, false, i, j, i - 1, j + 1);
+                        moves.emplace_back(Capture::None, side_, Type::Man, i, j, i - 1, j + 1);
                     }
 
                     // Capture UP LEFT
                     if (i > 1 and j > 1 and isEmpty(_board[i - 2][j - 2]) and isBlack(_board[i - 1][j - 1]))
                     {
-                        moves.emplace_back(side_, true, i, j, i - 2, j - 2);
+                        moves.emplace_back(Capture::Single, side_, Type::Man, i, j, i - 2, j - 2);
                     }
 
                     // Capture UP RIGHT
                     if (i > 1 and j < 6 and isEmpty(_board[i - 2][j + 2]) and isBlack(_board[i - 1][j + 1]))
                     {
-                        moves.emplace_back(side_, true, i, j, i - 2, j + 2);
+                        moves.emplace_back(Capture::Single, side_, Type::Man, i, j, i - 2, j + 2);
                     }
 
                     // Capture DOWN LEFT
                     if (i < 6 and j > 1 and isEmpty(_board[i + 2][j - 2]) and isBlack(_board[i + 1][j - 1]))
                     {
-                        moves.emplace_back(side_, true, i, j, i + 2, j - 2);
+                        moves.emplace_back(Capture::Single, side_, Type::Man, i, j, i + 2, j - 2);
                     }
 
                     // Capture DOWN RIGHT
                     if (i < 6 and j < 6 and isEmpty(_board[i + 2][j + 2]) and isBlack(_board[i + 1][j + 1]))
                     {
-                        moves.emplace_back(side_, true, i, j, i + 2, j + 2);
+                        moves.emplace_back(Capture::Single, side_, Type::Man, i, j, i + 2, j + 2);
                     }
                 }
                 else if (Cell::WHITE_KING == _board[i][j])
@@ -428,37 +428,37 @@ ConsoleGame::getAllMoves(Side side_) const
                     // Move DOWN LEFT
                     if (i < 7 and j > 0 and isEmpty(_board[i + 1][j - 1]))
                     {
-                        moves.emplace_back(side_, false, i, j, i + 1, j - 1);
+                        moves.emplace_back(Capture::None, side_, Type::Man, i, j, i + 1, j - 1);
                     }
 
                     // Move DOWN RIGHT
                     if (i < 7 and j < 7 and isEmpty(_board[i + 1][j + 1]))
                     {
-                        moves.emplace_back(side_, false, i, j, i + 1, j + 1);
+                        moves.emplace_back(Capture::None, side_, Type::Man, i, j, i + 1, j + 1);
                     }
 
                     // Capture DOWN LEFT
                     if (i < 6 and j > 1 and isEmpty(_board[i + 2][j - 2]) and isWhite(_board[i + 1][j - 1]))
                     {
-                        moves.emplace_back(side_, true, i, j, i + 2, j - 2);
+                        moves.emplace_back(Capture::Single, side_, Type::Man, i, j, i + 2, j - 2);
                     }
 
                     // Capture DOWN RIGHT
                     if (i < 6 and j < 6 and isEmpty(_board[i + 2][j + 2]) and isWhite(_board[i + 1][j + 1]))
                     {
-                        moves.emplace_back(side_, true, i, j, i + 2, j + 2);
+                        moves.emplace_back(Capture::Single, side_, Type::Man, i, j, i + 2, j + 2);
                     }
 
                     // Capture UP LEFT
                     if (i > 1 and j > 1 and isEmpty(_board[i - 2][j - 2]) and isWhite(_board[i - 1][j - 1]))
                     {
-                        moves.emplace_back(side_, true, i, j, i - 2, j - 2);
+                        moves.emplace_back(Capture::Single, side_, Type::Man, i, j, i - 2, j - 2);
                     }
 
                     // Capture UP RIGHT
                     if (i > 1 and j < 6 and isEmpty(_board[i - 2][j + 2]) and isWhite(_board[i - 1][j + 1]))
                     {
-                        moves.emplace_back(side_, true, i, j, i - 2, j + 2);
+                        moves.emplace_back(Capture::Single, side_, Type::Man, i, j, i - 2, j + 2);
                     }
                 }
                 else if (Cell::BLACK_KING == _board[i][j])

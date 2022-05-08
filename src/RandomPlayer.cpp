@@ -29,7 +29,7 @@ RandomPlayer::move()
     std::vector<Move> captures;
     for (auto& m : moves)
     {
-        if (m.capture())
+        if (Capture::None != m.capture())
         {
             captures.push_back(m);
         }
@@ -37,7 +37,7 @@ RandomPlayer::move()
 
     if (!captures.empty())
     {
-        LOG_DEBUG("There are captures, choose random one");
+        LOG_DEBUG("There are captures, choose random one from " << captures.size());
         std::string error;
         auto i = std::experimental::randint(0, (int)captures.size() - 1);
         if (auto res = _game.move(captures[i]); !res.valid)
@@ -48,7 +48,7 @@ RandomPlayer::move()
         return true;
     }
 
-    LOG_DEBUG("There are moves, choose random one");
+    LOG_DEBUG("There are moves, choose random one from " << moves.size());
     std::string error;
     auto i = std::experimental::randint(0, (int)moves.size() - 1);
     if (auto res = _game.move(moves[i]); !res.valid)
